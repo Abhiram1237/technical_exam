@@ -37,7 +37,7 @@
                 "description": "Specifies the Ubuntu version for the VM. This will pick a fully patched image of this given Ubuntu version."
             }
         },
-        "adminUsername": {
+        "majoruser": {
             "type": "string",
             "defaultValue": "azadmin",
             "metadata": {
@@ -135,7 +135,7 @@
                 },
                 "osProfile": {
                     "computerName": "[parameters('vmName')]",
-                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminUsername": "[parameters('majoruser')]",
                     "adminPassword": "[parameters('adminPasswordOrKey')]"
                 },
                 "storageProfile": {
