@@ -71,7 +71,7 @@
             "type": "int",
             "defaultValue": 1,
             "minValue": 0,
-            "maxValue": 64,,
+            "maxValue": 64,
             "metadata": {
                 "description": "Specifies the number of data disks of the virtual machine."
             }
