@@ -1,0 +1,111 @@
+
+trigger:
+- master
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  TestVariable: test1variable
+  Artifact_Name: Build
+
+
+stages:
+- stage: build
+  displayName: Build
+  jobs:
+  - job: Build
+    pool:
+      name: Default
+    steps:
+        - task: DotNetCoreCLI@2
+          displayName: Restore
+          inputs:
+            command: restore
+            projects: '**/*.csproj'
+            feedsToUse: config
+            nugetConfigPath: NuGet.config    
+            externalFeedCredentials: MyExternaFeedforMajorvin
+
+        - task: DotNetCoreCLI@2
+          displayName: Build
+          inputs:
+            command: build
+            projects: '**/*.csproj'
+            arguments: '--configuration $(buildConfiguration)' 
+            
+        - task: DotNetCoreCLI@2
+          inputs:
+            command: test
+            projects: '**/*Tests/*.csproj'
+            arguments: '--configuration $(buildConfiguration)'
+
+        - task: DotNetCoreCLI@2
+          inputs:
+            command: publish
+            publishWebProjects: True
+            arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+            zipAfterPublish: True
+                        
+        - task: PublishPipelineArtifact@1
+          inputs:
+            targetPath: '$(Build.ArtifactStagingDirectory)' 
+            artifactName: '$(Artifact_Name)'            
+
+- stage: ReleaseDev
+  displayName: ReleaseDev
+  condition: and(succeeded(), eq(variables['build.sourceBranch'], 'refs/heads/master'))
+  dependsOn:      
+  - build
+  jobs:
+  - deployment:
+    displayName: ReleaseDev
+    pool:
+      name: Default
+    environment: Development
+    strategy:
+      runOnce:
+        deploy:
+          steps:  
+          - script: echo "Let's Download, ReleaseDev!"
+            displayName: 'Run a Download Package script for Dev'           
+          - script: echo Hello, ReleaseDev!
+            displayName: 'Run a Deploy script for Dev'
+- stage: ReleaseTest
+  displayName: ReleaseTest
+  dependsOn:      
+  - ReleaseDev
+  jobs:
+  - deployment:
+    displayName: ReleaseTest
+    pool:
+      name: Default
+    environment: Test
+    strategy:
+      runOnce:
+        deploy:
+          steps:   
+          - script: echo "Let's Download, ReleaseTest!"
+            displayName: 'Run a Download Package script for Test'           
+          - script: echo Hello, ReleaseTest!
+            displayName: 'Run a Deploy script for Test'
+
+- stage: ReleasePreprod
+  displayName: ReleasePreprod
+  dependsOn:      
+  - ReleaseDev
+  - ReleaseTest
+  jobs:
+  - deployment:
+    displayName: ReleasePreprod
+    pool:
+      name: Default
+    environment: PreProd
+    strategy:
+      runOnce:
+        deploy:
+          steps:   
+          - script: echo "Let's Download, ReleaseProd!"
+            displayName: 'Run a Download Package script for Prod'           
+          - script: echo Hello, ReleaseProd!
+            displayName: 'Run a Deploy script for Prod'            
